@@ -7,7 +7,7 @@ using System.Web.Http;
 
 namespace Parcial2.Controllers
 {
-    public class FotoPrendasController1 : ApiController
+    public class FotoPrendasController : ApiController
     {
         // GET api/<controller>
         public IEnumerable<string> Get()
