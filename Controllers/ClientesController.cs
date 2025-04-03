@@ -1,31 +1,79 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Parcial2.Models;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Http;
+using System.Threading.Tasks;
+using VentaRopaAPI.Data;
+using VentaRopaAPI.Models;
 
 namespace Parcial2.Controllers
 {
-    public class ClientesController : ApiController
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ClientesController : ControllerBase
     {
-        public IEnumerable<string> Get()
+        private readonly TiendaRopaDbContext _context;
+
+        public ClientesController(TiendaRopaDbContext context)
         {
-            return new string[] { "value1", "value2" };
-        }
-        public string Get(int id)
-        {
-            return "value";
+            _context = context;
         }
 
-        public void Post([FromBody] string value)
+        // OBTENER TODOS LOS CLIENTES
+        [HttpGet]
+        public async Task<IActionResult> ObtenerClientes()
         {
+            var clientes = await _context.Clientes.ToListAsync();
+            return Ok(clientes);
         }
-        public void Put(int id, [FromBody] string value)
+
+        // OBTENER CLIENTE POR DOCUMENTO
+        [HttpGet("{documento}")]
+        public async Task<IActionResult> ObtenerCliente(string documento)
         {
+            var cliente = await _context.Clientes.FindAsync(documento);
+            if (cliente == null)
+                return NotFound("Cliente no encontrado.");
+            return Ok(cliente);
         }
-        public void Delete(int id)
+
+        // CREAR CLIENTE
+        [HttpPost]
+        public async Task<IActionResult> CrearCliente([FromBody] Cliente cliente)
         {
+            if (cliente == null)
+                return BadRequest("Datos inválidos.");
+
+            _context.Clientes.Add(cliente);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(ObtenerCliente), new { documento = cliente.Documento }, cliente);
+        }
+
+        // ACTUALIZAR CLIENTE
+        [HttpPut("{documento}")]
+        public async Task<IActionResult> ActualizarCliente(string documento, [FromBody] Cliente clienteActualizado)
+        {
+            if (documento != clienteActualizado.Documento)
+                return BadRequest("Documento no coincide.");
+
+            _context.Entry(clienteActualizado).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // ELIMINAR CLIENTE
+        [HttpDelete("{documento}")]
+        public async Task<IActionResult> EliminarCliente(string documento)
+        {
+            var cliente = await _context.Clientes.FindAsync(documento);
+            if (cliente == null)
+                return NotFound("Cliente no encontrado.");
+
+            _context.Clientes.Remove(cliente);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }
