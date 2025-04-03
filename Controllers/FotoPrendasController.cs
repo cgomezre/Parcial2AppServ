@@ -1,69 +1,72 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Parcial2.Models;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using VentaRopaAPI.Data;
-using VentaRopaAPI.Models;
+using System.Web.Http;
+using System.Data.Entity;
+using Parcial2.Models;
+using Parcial2.Data;
+using System.Net;
 
-namespace VentaRopaAPI.Controllers
+namespace Parcial2.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class FotoPrendasController : ControllerBase
+    [RoutePrefix("api/fotoprendas")]
+    public class FotoPrendasController : ApiController
     {
-        private readonly TiendaRopaDbContext _context;
+        private readonly AppDbContext _context;
 
-        public FotoPrendasController(TiendaRopaDbContext context)
+        public FotoPrendasController()
         {
-            _context = context;
+            _context = new AppDbContext();
         }
 
-        //OBTENER TODAS LAS IMÁGENES
+        // GET: api/fotoprendas
         [HttpGet]
-        public async Task<IActionResult> ObtenerImagenes()
+        [Route("")]
+        public async Task<IHttpActionResult> ObtenerImagenes()
         {
             var imagenes = await _context.FotoPrendas.ToListAsync();
             return Ok(imagenes);
         }
 
-        //OBTENER IMÁGENES DE UNA PRENDA POR ID
-        [HttpGet("prenda/{idPrenda}")]
-        public async Task<IActionResult> ObtenerImagenesDePrenda(int idPrenda)
+        // GET: api/fotoprendas/prenda/{idPrenda}
+        [HttpGet]
+        [Route("prenda/{idPrenda}")]
+        public async Task<IHttpActionResult> ObtenerImagenesDePrenda(int idPrenda)
         {
             var imagenes = await _context.FotoPrendas
-                                         .Where(f => f.IdPrenda == idPrenda)
+                                         .Where(f => f.idPrenda == idPrenda)
                                          .ToListAsync();
             if (!imagenes.Any())
-                return NotFound("No hay imágenes para esta prenda.");
+                return NotFound();
             return Ok(imagenes);
         }
 
-        //ACTUALIZAR UNA IMAGEN
-        [HttpPut("{idFoto}")]
-        public async Task<IActionResult> ActualizarImagen(int idFoto, [FromBody] FotoPrenda nuevaFoto)
+        // PUT: api/fotoprendas/{idFoto}
+        [HttpPut]
+        [Route("{idFoto}")]
+        public async Task<IHttpActionResult> ActualizarImagen(int idFoto, [FromBody] FotoPrenda_Models nuevaFoto)
         {
-            if (idFoto != nuevaFoto.IdFoto)
-                return BadRequest("El ID de la imagen no coincide.");
+            if (idFoto != nuevaFoto.idFoto)
+                return BadRequest();
 
             _context.Entry(nuevaFoto).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return StatusCode(HttpStatusCode.NoContent);
         }
 
-        //ELIMINAR UNA IMAGEN
-        [HttpDelete("{idFoto}")]
-        public async Task<IActionResult> EliminarImagen(int idFoto)
+        // DELETE: api/fotoprendas/{idFoto}
+        [HttpDelete]
+        [Route("{idFoto}")]
+        public async Task<IHttpActionResult> EliminarImagen(int idFoto)
         {
             var foto = await _context.FotoPrendas.FindAsync(idFoto);
             if (foto == null)
-                return NotFound("Imagen no encontrada.");
+                return NotFound();
 
             _context.FotoPrendas.Remove(foto);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return StatusCode(HttpStatusCode.NoContent);
         }
     }
 }
