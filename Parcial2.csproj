@@ -168,6 +168,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\Cliente_Models.cs" />
     <Compile Include="Models\Cliente.cs">
       <DependentUpon>DBExamen.tt</DependentUpon>
     </Compile>
@@ -189,9 +190,11 @@
     <Compile Include="Models\FotoPrenda.cs">
       <DependentUpon>DBExamen.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\FotoPrenda_Models.cs" />
     <Compile Include="Models\Prenda.cs">
       <DependentUpon>DBExamen.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\Prenda_Models.cs" />
     <Compile Include="Models\sysdiagram.cs">
       <DependentUpon>DBExamen.tt</DependentUpon>
     </Compile>
