@@ -1,32 +1,69 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Parcial2.Models;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Http;
+using System.Threading.Tasks;
+using VentaRopaAPI.Data;
+using VentaRopaAPI.Models;
 
-namespace Parcial2.Controllers
+namespace VentaRopaAPI.Controllers
 {
-    public class FotoPrendasController : ApiController
+    [Route("api/[controller]")]
+    [ApiController]
+    public class FotoPrendasController : ControllerBase
     {
-        public IEnumerable<string> Get()
+        private readonly TiendaRopaDbContext _context;
+
+        public FotoPrendasController(TiendaRopaDbContext context)
         {
-            return new string[] { "value1", "value2" };
+            _context = context;
         }
 
-        public string Get(int id)
+        //OBTENER TODAS LAS IMÁGENES
+        [HttpGet]
+        public async Task<IActionResult> ObtenerImagenes()
         {
-            return "value";
+            var imagenes = await _context.FotoPrendas.ToListAsync();
+            return Ok(imagenes);
         }
 
-        public void Post([FromBody] string value)
+        //OBTENER IMÁGENES DE UNA PRENDA POR ID
+        [HttpGet("prenda/{idPrenda}")]
+        public async Task<IActionResult> ObtenerImagenesDePrenda(int idPrenda)
         {
+            var imagenes = await _context.FotoPrendas
+                                         .Where(f => f.IdPrenda == idPrenda)
+                                         .ToListAsync();
+            if (!imagenes.Any())
+                return NotFound("No hay imágenes para esta prenda.");
+            return Ok(imagenes);
         }
-        public void Put(int id, [FromBody] string value)
+
+        //ACTUALIZAR UNA IMAGEN
+        [HttpPut("{idFoto}")]
+        public async Task<IActionResult> ActualizarImagen(int idFoto, [FromBody] FotoPrenda nuevaFoto)
         {
+            if (idFoto != nuevaFoto.IdFoto)
+                return BadRequest("El ID de la imagen no coincide.");
+
+            _context.Entry(nuevaFoto).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
-        public void Delete(int id)
+
+        //ELIMINAR UNA IMAGEN
+        [HttpDelete("{idFoto}")]
+        public async Task<IActionResult> EliminarImagen(int idFoto)
         {
+            var foto = await _context.FotoPrendas.FindAsync(idFoto);
+            if (foto == null)
+                return NotFound("Imagen no encontrada.");
+
+            _context.FotoPrendas.Remove(foto);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }

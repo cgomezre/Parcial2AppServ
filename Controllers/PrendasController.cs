@@ -6,35 +6,12 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 
-[HttpGet("cliente/{documento}")]
+
 namespace Parcial2.Controllers
 {
+    [HttpGet("cliente/{documento}")]
     public class PrendasController : ApiController
     {
-
-        public IEnumerable<string> Get()
-        {
-            return new string[] { "value1", "value2" };
-        }
-
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        public void Post([FromBody] string value)
-        {
-        }
-
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        public void Delete(int id)
-        {
-        }
-
-
         public async Task<IActionResult> ObtenerPrendasPorCliente(string documento)
         {
             // Buscar el cliente con sus prendas e imágenes asociadas
@@ -144,30 +121,7 @@ namespace Parcial2.Controllers
                 return BadRequest("Error al registrar la prenda.");
             }
         }
-
-        [HttpDelete("eliminar-imagen/{idFoto}")]
-        public async Task<IActionResult> EliminarImagen(int idFoto)
-        {
-            // Buscar la imagen en la base de datos
-            var foto = await _context.FotosPrendas.FindAsync(idFoto);
-            if (foto == null)
-                return NotFound("Imagen no encontrada");
-
-            // Ruta física del archivo
-            var ruta = Path.Combine("wwwroot/imagenes", Path.GetFileName(foto.FotoPrendaUrl));
-
-            // Verificar si el archivo existe y eliminarlo
-            if (System.IO.File.Exists(ruta))
-            {
-                System.IO.File.Delete(ruta);
-            }
-
-            // Eliminar la imagen de la base de datos
-            _context.FotosPrendas.Remove(foto);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Mensaje = "Imagen eliminada correctamente" });
-        }
+     
 
 
     }
