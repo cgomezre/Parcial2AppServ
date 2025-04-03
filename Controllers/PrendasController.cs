@@ -1,4 +1,5 @@
 ﻿using Parcial2.Models;
+using Parcial2.Data;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -7,18 +8,28 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
-
+using System.Net;
+using System.Web.Http.Results;
 
 namespace Parcial2.Controllers
 {
-    [HttpGet("cliente/{documento}")]
+    [RoutePrefix("api/prendas")]
     public class PrendasController : ApiController
     {
-        public async Task<IActionResult> ObtenerPrendasPorCliente(string documento)
+        private readonly AppDbContext _context;
+
+        public PrendasController()
         {
-            // Buscar el cliente con sus prendas e imágenes asociadas
+            _context = new AppDbContext();
+        }
+
+        // GET: api/prendas/cliente/{documento}
+        [HttpGet]
+        [Route("cliente/{documento}")]
+        public async Task<IHttpActionResult> ObtenerPrendasPorCliente(string documento)
+        {
             var cliente = await _context.Clientes
-                .Include(c => c.Prendas.Select(p => p.Fotos))
+                .Include(c => c.Prendas.Select(p => p.FotoPrendas))
                 .FirstOrDefaultAsync(c => c.Documento == documento);
 
             if (cliente == null)
@@ -36,55 +47,43 @@ namespace Parcial2.Controllers
                     p.TipoPrenda,
                     p.Descripcion,
                     p.Valor,
-                    Imagenes = p.Fotos.Select(f => f.FotoPrendaUrl)
-                })
+                    Imagenes = p.FotoPrendas.Select(f => f.Prenda).ToList()
+                }).ToList()
             };
 
             return Ok(resultado);
         }
 
-        // POST api/prendas/agregar
+        // POST: api/prendas/agregar
         [HttpPost]
-        [Route("api/prendas/agregar")]
-        public async Task<IHttpActionResult> AgregarPrenda([FromBody] Prenda prenda)
+        [Route("agregar")]
+        public async Task<IHttpActionResult> AgregarPrenda([FromBody] Prenda_Models prenda)
         {
-            if (prenda == null || string.IsNullOrEmpty(prenda.ClienteDocumento))
+            if (prenda == null || string.IsNullOrEmpty(prenda.Cliente))
                 return BadRequest("Los datos de la prenda o del cliente son inválidos.");
 
             using (var transaction = _context.Database.BeginTransaction())
             {
                 try
                 {
-                    var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Documento == prenda.ClienteDocumento);
+                    var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Documento == prenda.Cliente);
                     if (cliente == null)
                     {
-                        cliente = new Cliente
-                        {
-                            Documento = prenda.ClienteDocumento,
-                            Nombre = prenda.Cliente.Nombre,
-                            Email = prenda.Cliente.Email,
-                            Celular = prenda.Cliente.Celular
-                        };
-                        _context.Clientes.Add(cliente);
-                        await _context.SaveChangesAsync();
+                        return BadRequest("El cliente especificado no existe.");
                     }
 
-                    prenda.Cliente = cliente;
                     _context.Prendas.Add(prenda);
                     await _context.SaveChangesAsync();
-
                     transaction.Commit();
 
-                return Ok(new { Mensaje = "Prenda agregada correctamente", PrendaId = prenda.IdPrenda });
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                return BadRequest("Error al registrar la prenda.");
+                    return Ok(new { Mensaje = "Prenda agregada correctamente", PrendaId = prenda.IdPrenda });
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    return BadRequest("Error al registrar la prenda.");
+                }
             }
         }
-     
-
-
     }
 }

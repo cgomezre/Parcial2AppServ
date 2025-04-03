@@ -1,43 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+﻿using System.Data.Entity;
 using Parcial2.Models;
-using System.Data.Entity;
 
 namespace Parcial2.Data
 {
-
-
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public AppDbContext() : base("DefaultConnection") { }
 
-        public DbSet<Cliente> Clientes { get; set; }
-        public DbSet<Prenda> Prendas { get; set; }
+        public DbSet<Cliente_Models> Clientes { get; set; }
+        public DbSet<Prenda_Models> Prendas { get; set; }
         public DbSet<FotoPrenda> FotoPrendas { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Cliente>()
-                .HasKey(c => c.Documento);
+            modelBuilder.Entity<Cliente_Models>()
+                .HasKey(c => c.Documento)
+                .ToTable("Cliente");
 
-            modelBuilder.Entity<Prenda>()
-                .HasKey(p => p.IdPrenda);
+            modelBuilder.Entity<Prenda_Models>()
+                .HasKey(p => p.IdPrenda)
+                .ToTable("Prenda");
 
             modelBuilder.Entity<FotoPrenda>()
-                .HasKey(f => f.IdFoto);
+                .HasKey(f => f.idFoto)
+                .ToTable("FotoPrenda");
 
-            modelBuilder.Entity<Cliente>()
+            modelBuilder.Entity<Cliente_Models>()
                 .HasMany(c => c.Prendas)
-                .WithOne(p => p.Cliente)
-                .HasForeignKey(p => p.ClienteDocumento);
+                .WithRequired()
+                .HasForeignKey(p => p.Cliente);
 
-            modelBuilder.Entity<Prenda>()
-                .HasMany(p => p.FotoPrendas)
-                .WithOne(f => f.Prenda)
-                .HasForeignKey(f => f.IdPrenda);
+            modelBuilder.Entity<Prenda_Models>()
+                .HasMany(p => p.Fotos)
+                .WithRequired()
+                .HasForeignKey(f => f.idPrenda);
         }
     }
-
 }

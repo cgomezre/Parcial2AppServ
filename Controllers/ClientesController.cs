@@ -1,79 +1,100 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Parcial2.Models;
+﻿using Parcial2.Models;
+using Parcial2.Data;
+using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
-using VentaRopaAPI.Data;
-using VentaRopaAPI.Models;
+using System.Web.Http;
 
 namespace Parcial2.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ClientesController : ControllerBase
+    [RoutePrefix("api/clientes")]
+    public class ClientesController : ApiController
     {
-        private readonly TiendaRopaDbContext _context;
+        private readonly AppDbContext _context;
 
-        public ClientesController(TiendaRopaDbContext context)
+        public ClientesController()
         {
-            _context = context;
+            _context = new AppDbContext();
         }
 
-        // OBTENER TODOS LOS CLIENTES
+        // GET: api/clientes
         [HttpGet]
-        public async Task<IActionResult> ObtenerClientes()
+        [Route("")]
+        public async Task<IHttpActionResult> ObtenerClientes()
         {
             var clientes = await _context.Clientes.ToListAsync();
             return Ok(clientes);
         }
 
-        // OBTENER CLIENTE POR DOCUMENTO
-        [HttpGet("{documento}")]
-        public async Task<IActionResult> ObtenerCliente(string documento)
+        // GET: api/clientes/{documento}
+        [HttpGet]
+        [Route("{documento}")]
+        public async Task<IHttpActionResult> ObtenerCliente(string documento)
         {
-            var cliente = await _context.Clientes.FindAsync(documento);
+            var cliente = await _context.Clientes
+                .Include(c => c.Prendas.Select(p => p.FotoPrendas))
+                .FirstOrDefaultAsync(c => c.Documento == documento);
+
             if (cliente == null)
-                return NotFound("Cliente no encontrado.");
+                return NotFound();
+
             return Ok(cliente);
         }
 
-        // CREAR CLIENTE
+        // POST: api/clientes
         [HttpPost]
-        public async Task<IActionResult> CrearCliente([FromBody] Cliente cliente)
+        [Route("")]
+        public async Task<IHttpActionResult> CrearCliente([FromBody] Cliente_Models cliente)
         {
             if (cliente == null)
                 return BadRequest("Datos inválidos.");
 
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(ObtenerCliente), new { documento = cliente.Documento }, cliente);
+
+            return Created($"api/clientes/{cliente.Documento}", cliente);
         }
 
-        // ACTUALIZAR CLIENTE
-        [HttpPut("{documento}")]
-        public async Task<IActionResult> ActualizarCliente(string documento, [FromBody] Cliente clienteActualizado)
+        // PUT: api/clientes/{documento}
+        [HttpPut]
+        [Route("{documento}")]
+        public async Task<IHttpActionResult> ActualizarCliente(string documento, [FromBody] Cliente clienteActualizado)
         {
             if (documento != clienteActualizado.Documento)
                 return BadRequest("Documento no coincide.");
 
             _context.Entry(clienteActualizado).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
 
-            return NoContent();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+                if (!_context.Clientes.Any(c => c.Documento == documento))
+                    return NotFound();
+
+                throw;
+            }
+
+            return StatusCode(HttpStatusCode.NoContent);
         }
 
-        // ELIMINAR CLIENTE
-        [HttpDelete("{documento}")]
-        public async Task<IActionResult> EliminarCliente(string documento)
+        // DELETE: api/clientes/{documento}
+        [HttpDelete]
+        [Route("{documento}")]
+        public async Task<IHttpActionResult> EliminarCliente(string documento)
         {
             var cliente = await _context.Clientes.FindAsync(documento);
             if (cliente == null)
-                return NotFound("Cliente no encontrado.");
+                return NotFound();
 
             _context.Clientes.Remove(cliente);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return StatusCode(HttpStatusCode.NoContent);
         }
     }
 }

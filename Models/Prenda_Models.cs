@@ -18,8 +18,8 @@ namespace Parcial2.Models
 
         [ForeignKey("Cliente")]
         public string Cliente { get; set; }
-        public Cliente ClienteInfo { get; set; }
 
-        public ICollection<FotoPrenda> Fotos { get; set; }
+
+        public virtual ICollection<FotoPrenda> FotoPrendas { get; set; }
     }
 }
