@@ -8,23 +8,15 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 
+
 namespace Parcial2.Controllers
 {
+    [HttpGet("cliente/{documento}")]
     public class PrendasController : ApiController
     {
-        private readonly AppDbContext _context = new AppDbContext();
-
-        // GET api/prendas
-        public IEnumerable<string> Get()
+        public async Task<IActionResult> ObtenerPrendasPorCliente(string documento)
         {
-            return new string[] { "value1", "value2" };
-        }
-
-        // GET api/prendas/cliente/{documento}
-        [HttpGet]
-        [Route("api/prendas/cliente/{documento}")]
-        public async Task<IHttpActionResult> ObtenerPrendasPorCliente(string documento)
-        {
+            // Buscar el cliente con sus prendas e imágenes asociadas
             var cliente = await _context.Clientes
                 .Include(c => c.Prendas.Select(p => p.Fotos))
                 .FirstOrDefaultAsync(c => c.Documento == documento);
@@ -83,66 +75,16 @@ namespace Parcial2.Controllers
 
                     transaction.Commit();
 
-                    return Ok(new { Mensaje = "Prenda agregada correctamente", PrendaId = prenda.IdPrenda });
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    return BadRequest("Error al registrar la prenda.");
-                }
+                return Ok(new { Mensaje = "Prenda agregada correctamente", PrendaId = prenda.IdPrenda });
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return BadRequest("Error al registrar la prenda.");
             }
         }
+     
 
-        // POST api/prendas/subir-imagen
-        [HttpPost]
-        [Route("api/prendas/subir-imagen")]
-        public async Task<IHttpActionResult> SubirImagen(int prendaId)
-        {
-            var httpRequest = HttpContext.Current.Request;
-            var postedFile = httpRequest.Files["imagen"];
 
-            if (postedFile == null || postedFile.ContentLength == 0)
-                return BadRequest("Debe subir una imagen válida.");
-
-            var prenda = await _context.Prendas.FirstOrDefaultAsync(p => p.IdPrenda == prendaId);
-            if (prenda == null)
-                return NotFound();
-
-            var nombreArchivo = $"{Guid.NewGuid()}_{Path.GetFileName(postedFile.FileName)}";
-            var ruta = Path.Combine(HttpContext.Current.Server.MapPath("~/imagenes"), nombreArchivo);
-            postedFile.SaveAs(ruta);
-
-            var foto = new FotoPrenda
-            {
-                IdPrenda = prendaId,
-                FotoPrendaUrl = $"/imagenes/{nombreArchivo}"
-            };
-
-            _context.FotosPrendas.Add(foto);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Mensaje = "Imagen guardada", Url = foto.FotoPrendaUrl });
-        }
-
-        // DELETE api/prendas/eliminar-imagen/{idFoto}
-        [HttpDelete]
-        [Route("api/prendas/eliminar-imagen/{idFoto}")]
-        public async Task<IHttpActionResult> EliminarImagen(int idFoto)
-        {
-            var foto = await _context.FotosPrendas.FindAsync(idFoto);
-            if (foto == null)
-                return NotFound();
-
-            var ruta = HttpContext.Current.Server.MapPath("~" + foto.FotoPrendaUrl);
-            if (File.Exists(ruta))
-            {
-                File.Delete(ruta);
-            }
-
-            _context.FotosPrendas.Remove(foto);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Mensaje = "Imagen eliminada correctamente" });
-        }
     }
 }
